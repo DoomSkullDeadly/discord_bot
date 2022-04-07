@@ -1,9 +1,8 @@
 import discord
-from discord.ext import commands
 import check
 from rps import Rps
 
-TOKEN = 'OTEyNTA3OTE3OTUxOTYzMTQ2.YZw9OQ.WoCuEOHRVD-GlYSaRON4sm_eDns'
+TOKEN = open("token.txt", "r").read()
 
 client = discord.Client()
 
@@ -25,7 +24,7 @@ async def on_message(message):
     username = str(message.author)
     user_message = str(message.content)
     channel = str(message.channel.name)
-    print(f'{username}: {user_message} ({channel})')
+    print(f'{username}: {user_message} ({channel[:10]})')
 
     if message.author == client.user:
         return
@@ -125,7 +124,7 @@ async def on_message(message):
                     games.remove(game)
 
     else:
-        if 'https://discord' in user_message and 'https://discord.com' not in user_message: #make better, deletes scams
+        if 'https://discord' in user_message and 'https://discord.com' not in user_message:  # make better, delete scams
             message.delete()
 
 
