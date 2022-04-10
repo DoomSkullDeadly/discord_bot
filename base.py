@@ -1,21 +1,33 @@
 import discord
+from discord_slash import SlashCommand, SlashContext
+from discord.ext import commands
 
 TOKEN = open("token.txt", "r").read()
 
-client = discord.Client()
+bot = commands.Bot(command_prefix=".", intents=discord.Intents.all())
+slash = SlashCommand(bot, sync_commands=True)
+guild_ids = []
 
 
-@client.event
+@bot.event
 async def on_ready():
-    print('Logged in as {0.user}'.format(client))
+    global guild_ids
+    print('Logged in as {0.user}'.format(bot))
+    guild_ids = [guild.id for guild in bot.guilds]
 
 
-@client.event
+@bot.event
 async def on_message(message):
     username = str(message.author)
     user_message = str(message.content)
     channel = str(message.channel.name)
-    print(f'{username}: {user_message} ({channel[:10]})')
+    print(f'({channel[:10]}) - {username}: {user_message}')
 
 
-client.run(TOKEN)
+@slash.slash(name="test", description="this is to test slash commands", guild_ids=guild_ids)  # TODO: GODO FIX!
+async def test(ctx: SlashContext):
+    print("Received")
+    await ctx.send(content="Success!")
+
+
+bot.run(TOKEN)
