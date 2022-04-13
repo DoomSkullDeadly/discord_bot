@@ -5,7 +5,7 @@ from discord.ext import commands
 TOKEN = open("token.txt", "r").read()
 
 bot = commands.Bot(command_prefix="!", intents=discord.Intents.all())
-slash = SlashCommand(bot)
+slash = SlashCommand(bot, sync_commands=True)
 guild_ids = []
 
 
