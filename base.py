@@ -38,16 +38,17 @@ async def name(ctx):
     await ctx.send(f"your name is {ctx.author}")
 
 
-@slash.slash(name="test2", description="this is to test slash commands", guild_ids=guild_ids)  # TODO: GODO FIX!
-async def test2(ctx: SlashContext):
-    print("Received slash command")
-    await ctx.send(content="Success!")
+# @slash.slash(name="test2", description="this is to test slash commands", guild_ids=guild_ids)  # TODO: GODO FIX!
+# async def test2(ctx: SlashContext):
+#     print("Received slash command")
+#     await ctx.send(content="Success!")
+#
+#
+# @slash.slash(name="newtest", description="this is to test slash commands, again", guild_ids=guild_ids)
+# async def newtest(ctx: SlashContext):
+#     print("Received slash command")
+#     await ctx.send(content="Success in new!")
 
 
-@slash.slash(name="newtest", description="this is to test slash commands, again", guild_ids=guild_ids)
-async def newtest(ctx: SlashContext):
-    print("Received slash command")
-    await ctx.send(content="Success in new!")
-
-
-bot.run(TOKEN)
+if __name__ == '__main__':
+    bot.run(TOKEN)
