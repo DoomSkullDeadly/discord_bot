@@ -1,5 +1,6 @@
 import discord
 import json
+from datetime import datetime as dt
 from discord.ext import commands
 
 with open("token.txt", "r") as f:
@@ -26,8 +27,16 @@ async def on_message(message):
     await bot.process_commands(message)
 
 
+@bot.command(name='name')
+async def name(ctx):
+    await ctx.send(f"your name is {ctx.author}")
+
+
 @bot.command(name='say')
 async def bot_list(ctx, *args):
+    if not args:
+        await ctx.send("You have to tell me what to say!")
+        return
     await ctx.send("{}".format(" ".join(args)))
 
 
@@ -52,8 +61,35 @@ async def bot_list(ctx, *args):
 
 
 @bot.command(name='log')  # TODO logs @name with reason and who logged
-async def mod_log(ctx, name, *args):
-    await ctx.send("Logged {} for {}".format(name, " ".join(args)))
+async def mod_log(ctx, uid: str, *args):
+    if not uid or '<@' not in uid:
+        await ctx.send("Must provide name, @user")
+        return
+
+    if not args:
+        await ctx.send("Must provide a reason!")
+        return
+
+    with open("mod_logs.json", "r") as f:
+        logs = json.loads(f.read())
+
+    for i in ('<', '>', '@'):
+        uid = uid.replace(i, '')
+    if uid not in logs:
+        logs[uid] = {}
+
+    user_name = await bot.fetch_user(uid)
+    times_logged = len(logs[uid])
+    logs[uid][times_logged + 1] = {"timestamp": dt.timestamp(dt.now()),
+                                   "reason": " ".join(args),
+                                   "user_name_at_time": user_name.name,
+                                   "mod_id": ctx.author.id,
+                                   "mod_name": ctx.author.name}
+
+    with open("mod_logs.json", "w") as f:
+        f.write(json.dumps(logs, indent=4))
+
+    await ctx.send("Logged {} for {}".format(await bot.fetch_user(uid), " ".join(args)))
 
 
 if __name__ == '__main__':
