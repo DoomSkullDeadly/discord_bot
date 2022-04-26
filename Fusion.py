@@ -63,7 +63,7 @@ async def bot_list(ctx, list_name: str, uid: str, *args):
 
     if list_name == 'logs':
         with open("mod_logs.json", "r") as f:
-            logs = json.loads(f.read())
+            all_logs = json.loads(f.read())
 
         if '#' in uid:
             guild = bot.get_guild(ctx.guild.id)
@@ -74,19 +74,25 @@ async def bot_list(ctx, list_name: str, uid: str, *args):
             for i in ('<', '>', '@'):
                 uid = uid.replace(i, '')
 
+        if str(ctx.guild.id) not in all_logs:
+            await ctx.send("No logs found for this server")
+            return
+        else:
+            logs = all_logs[str(ctx.guild.id)]
+
         if str(uid) not in logs:
             await ctx.send(f"No logs found for {bot.get_user(uid)}")
             return
 
         message = ''
         for log in logs[str(uid)]:
-            message += f'{int(log)} - {dt.fromtimestamp(logs[str(uid)][log]["timestamp"]).strftime("%Y/%m/%d at %H:%M:%S")}\n'
-            message += f'Username at time: {logs[str(uid)][log]["user_name_at_time"]}\n'
+            message += f'{int(log)} - {dt.fromtimestamp(logs[str(uid)][log]["timestamp"]).strftime("%Y/%m/%d at %H:%M:%S")} UTC\n'  # log number and time
+            message += f'Username at time: {logs[str(uid)][log]["user_name_at_time"]}\n'  # name of user logged
             if bot.get_user(logs[str(uid)][log]["mod_id"]).name == logs[str(uid)][log]["mod_name"]:
-                message += f'Logged by {bot.get_user(logs[str(uid)][log]["mod_id"])}\n'
+                message += f'Logged by {bot.get_user(logs[str(uid)][log]["mod_id"])}\n'  # name of person that logged
             else:
-                message += f'Logged by {bot.get_user(logs[str(uid)][log]["mod_id"])} ({logs[str(uid)][log]["mod_name"]})\n'
-            message += f'Reason: {logs[str(uid)][log]["reason"]}\n'
+                message += f'Logged by {bot.get_user(logs[str(uid)][log]["mod_id"])} ({logs[str(uid)][log]["mod_name"]})\n'  # name of person that logged + name at time
+            message += f'Reason: {logs[str(uid)][log]["reason"]}\n'  # reason for log
             message += '\n'
 
         await ctx.send(message)
@@ -103,9 +109,6 @@ async def mod_log(ctx, uid: str, *args):
         await ctx.send("Must provide a reason!")
         return
 
-    with open("mod_logs.json", "r") as f:
-        logs = json.loads(f.read())
-
     if '#' in uid:
         guild = bot.get_guild(ctx.guild.id)
         user = discord.utils.get(guild.members, name=uid.split('#')[0], discriminator=uid.split('#')[1])
@@ -115,16 +118,22 @@ async def mod_log(ctx, uid: str, *args):
         for i in ('<', '>', '@'):
             uid = uid.replace(i, '')
 
-    if str(uid) not in logs:
-        logs[str(uid)] = {}
+    with open("mod_logs.json", "r") as f:
+        logs = json.loads(f.read())
+
+    if str(ctx.guild.id) not in logs:
+        logs[str(ctx.guild.id)] = {}
+
+    if str(uid) not in logs[str(ctx.guild.id)]:
+        logs[str(ctx.guild.id)][str(uid)] = {}
 
     user_name = await bot.fetch_user(uid)
-    times_logged = len(logs[str(uid)])
-    logs[str(uid)][times_logged + 1] = {"timestamp": dt.timestamp(dt.now()),
-                                        "reason": " ".join(args),
-                                        "user_name_at_time": user_name.name,
-                                        "mod_id": ctx.author.id,
-                                        "mod_name": ctx.author.name}
+    times_logged = len(logs[str(ctx.guild.id)][str(uid)])
+    logs[str(ctx.guild.id)][str(uid)][times_logged + 1] = {"timestamp": dt.timestamp(dt.now()),
+                                                           "reason": " ".join(args),
+                                                           "user_name_at_time": user_name.name,
+                                                           "mod_id": ctx.author.id,
+                                                           "mod_name": ctx.author.name}
 
     with open("mod_logs.json", "w") as f:
         f.write(json.dumps(logs, indent=4))
