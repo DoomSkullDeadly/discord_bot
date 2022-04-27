@@ -4,10 +4,13 @@ from datetime import datetime as dt
 from discord.ext import commands
 from discord.ext.commands import has_permissions
 
-with open("token.txt", "r") as f:
+with open("fusion_token.txt", "r") as f:
     TOKEN = f.read()
 bot = commands.Bot(command_prefix="f!", intents=discord.Intents.all())
 guild_ids = []
+servers = {"916372812460068915":
+               {"welcome_channel": 916372812460068918}  # set to False if no channel
+           }
 
 
 @bot.event
@@ -28,6 +31,13 @@ async def on_message(message):
     await bot.process_commands(message)
 
 
+@bot.event
+async def on_member_join(member):
+    welcome_channel = await bot.fetch_channel(servers[str(member.guild.id)]["welcome_channel"])
+    if welcome_channel:
+        await welcome_channel.send('https://tenor.com/view/hello-there-hi-there-greetings-gif-9442662')
+
+
 @bot.command(name='name')
 async def name(ctx):
     await ctx.send(f"your name is {ctx.author}")
@@ -38,7 +48,27 @@ async def bot_list(ctx, *args):
     if not args:
         await ctx.send("You have to tell me what to say!")
         return
-    await ctx.send("{}".format(" ".join(args)))
+
+    args = "{}".format(" ".join(args))
+
+    if '@' in args:  # TODO: fix
+        args.replace('@', '@ ')
+
+    print(args)
+    if args[:-2] == '/s':
+        args = list(args)
+        lu = -1
+        for idx in range(len(args[:-2])):
+            if args[idx] == ' ':
+                continue
+            if lu == -1:
+                args[idx] = args[idx].lower()
+            if lu == 1:
+                args[idx] = args[idx].upper()
+            lu *= -1
+        args = ''.join(args[:-2])
+
+    await ctx.send(args)
 
 
 @bot.command(name='fusion')
@@ -52,61 +82,60 @@ async def helpme(ctx):
 
 
 @bot.command(name='warn')  # TODO warns sender of message replied to, or the @name
-async def warn(ctx, name):
-    await ctx.send(f"Warning! {name}")
+async def warn(ctx, name, *args):
+    await ctx.send(f"Warning! {name} "+"{}".format(" ".join(args)))
 
 
-@bot.command(name='list')  # TODO return requested list with optional arguments i.e. list logs @name
+@bot.command(name='logs')  # TODO return requested list with optional arguments i.e. list logs @name
 @has_permissions(ban_members=True)
-async def bot_list(ctx, list_name: str, uid, *args):
+async def mod_logs(ctx, uid, *args):
     if (not uid or '<@' not in uid) and ('#' not in uid) and not uid.isdigit():
         await ctx.send("Must provide valid name!")
         return
 
-    if list_name == 'logs':
-        with open("mod_logs.json", "r") as f:
-            all_logs = json.loads(f.read())
+    with open("mod_logs.json", "r") as f:
+        all_logs = json.loads(f.read())
 
-        if '#' in uid:
-            guild = bot.get_guild(ctx.guild.id)
-            user = discord.utils.get(guild.members, name=uid.split('#')[0], discriminator=uid.split('#')[1])
-            if user is None:
-                await ctx.send("User not found")
-                return
-            uid = user.id
-
-        elif uid.isdigit():
-            if not await bot.fetch_user(int(uid)):
-                await ctx.send("User not found")
-                return
-
-        else:
-            for i in ('<', '>', '@'):
-                uid = uid.replace(i, '')
-
-        if str(ctx.guild.id) not in all_logs:
-            await ctx.send("No logs found for this server")
+    if '#' in uid:
+        guild = bot.get_guild(ctx.guild.id)
+        user = discord.utils.get(guild.members, name=uid.split('#')[0], discriminator=uid.split('#')[1])
+        if user is None:
+            await ctx.send("User not found")
             return
-        else:
-            logs = all_logs[str(ctx.guild.id)]
+        uid = user.id
 
-        if str(uid) not in logs:
-            await ctx.send(f"No logs found for {bot.get_user(uid)}")
+    elif uid.isdigit():
+        if not await bot.fetch_user(int(uid)):
+            await ctx.send("User not found")
             return
 
-        message = ''
-        for log in logs[str(uid)]:
-            message += f'{int(log)} - {dt.fromtimestamp(logs[str(uid)][log]["timestamp"]).strftime("%Y/%m/%d at %H:%M:%S")} UTC\n'  # log number and time
-            message += f'Username at time: {logs[str(uid)][log]["user_name_at_time"]}\n'  # name of user logged
-            if bot.get_user(logs[str(uid)][log]["mod_id"]).name == logs[str(uid)][log]["mod_name"]:
-                message += f'Logged by {bot.get_user(logs[str(uid)][log]["mod_id"])}\n'  # name of person that logged
-            else:
-                message += f'Logged by {bot.get_user(logs[str(uid)][log]["mod_id"])} ({logs[str(uid)][log]["mod_name"]})\n'  # name of person that logged + name at time
-            message += f'Reason: {logs[str(uid)][log]["reason"]}\n'  # reason for log
-            message += '\n'
+    else:
+        for i in ('<', '>', '@'):
+            uid = uid.replace(i, '')
 
-        await ctx.send(message)
+    if str(ctx.guild.id) not in all_logs:
+        await ctx.send("No logs found for this server")
         return
+    else:
+        logs = all_logs[str(ctx.guild.id)]
+
+    if str(uid) not in logs:
+        await ctx.send(f"No logs found for {bot.get_user(uid)}")
+        return
+
+    message = ''
+    for log in logs[str(uid)]:
+        message += f'{int(log)} - {dt.fromtimestamp(logs[str(uid)][log]["timestamp"]).strftime("%Y/%m/%d at %H:%M:%S")} UTC\n'  # log number and time
+        message += f'Username at time: {logs[str(uid)][log]["user_name_at_time"]}\n'  # name of user logged
+        if bot.get_user(logs[str(uid)][log]["mod_id"]).name == logs[str(uid)][log]["mod_name"]:
+            message += f'Logged by {bot.get_user(logs[str(uid)][log]["mod_id"])}\n'  # name of person that logged
+        else:
+            message += f'Logged by {bot.get_user(logs[str(uid)][log]["mod_id"])} ({logs[str(uid)][log]["mod_name"]})\n'  # name of person that logged + name at time
+        message += f'Reason: {logs[str(uid)][log]["reason"]}\n'  # reason for log
+        message += '\n'
+
+    await ctx.send(message)
+    return
 
 
 @bot.command(name='log')
