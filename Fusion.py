@@ -2,6 +2,7 @@ import discord
 import json
 from datetime import datetime as dt
 from discord.ext import commands
+from discord.ext.commands import has_permissions
 
 with open("token.txt", "r") as f:
     TOKEN = f.read()
@@ -56,9 +57,10 @@ async def warn(ctx, name):
 
 
 @bot.command(name='list')  # TODO return requested list with optional arguments i.e. list logs @name
-async def bot_list(ctx, list_name: str, uid: str, *args):
-    if (not uid or '<@' not in uid) and ('#' not in uid):
-        await ctx.send("Must provide name, @user")
+@has_permissions(ban_members=True)
+async def bot_list(ctx, list_name: str, uid, *args):
+    if (not uid or '<@' not in uid) and ('#' not in uid) and not uid.isdigit():
+        await ctx.send("Must provide valid name!")
         return
 
     if list_name == 'logs':
@@ -68,7 +70,15 @@ async def bot_list(ctx, list_name: str, uid: str, *args):
         if '#' in uid:
             guild = bot.get_guild(ctx.guild.id)
             user = discord.utils.get(guild.members, name=uid.split('#')[0], discriminator=uid.split('#')[1])
+            if user is None:
+                await ctx.send("User not found")
+                return
             uid = user.id
+
+        elif uid.isdigit():
+            if not await bot.fetch_user(int(uid)):
+                await ctx.send("User not found")
+                return
 
         else:
             for i in ('<', '>', '@'):
@@ -100,9 +110,10 @@ async def bot_list(ctx, list_name: str, uid: str, *args):
 
 
 @bot.command(name='log')
-async def mod_log(ctx, uid: str, *args):
-    if (not uid or '<@' not in uid) and ('#' not in uid):
-        await ctx.send("Must provide name, @user")
+@has_permissions(ban_members=True)
+async def mod_log(ctx, uid, *args):
+    if (not uid or '<@' not in uid) and ('#' not in uid) and not uid.isdigit():
+        await ctx.send("Must provide valid name")
         return
 
     if not args:
@@ -112,7 +123,15 @@ async def mod_log(ctx, uid: str, *args):
     if '#' in uid:
         guild = bot.get_guild(ctx.guild.id)
         user = discord.utils.get(guild.members, name=uid.split('#')[0], discriminator=uid.split('#')[1])
+        if user is None:
+            await ctx.send("User not found")
+            return
         uid = user.id
+
+    elif uid.isdigit():
+        if not await bot.fetch_user(int(uid)):
+            await ctx.send("User not found")
+            return
 
     else:
         for i in ('<', '>', '@'):
