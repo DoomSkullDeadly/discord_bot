@@ -2,9 +2,9 @@ import discord
 import json
 from datetime import datetime as dt
 from discord.ext import commands
-from discord.ext.commands import has_permissions
+from discord.ext.commands import has_permissions, has_role, has_any_role
 
-with open("fusion_token.txt", "r") as f:
+with open("token.txt", "r") as f:
     TOKEN = f.read()
 bot = commands.Bot(command_prefix="f!", intents=discord.Intents.all())
 guild_ids = []
@@ -35,7 +35,8 @@ async def on_message(message):
 async def on_member_join(member):
     welcome_channel = await bot.fetch_channel(servers[str(member.guild.id)]["welcome_channel"])
     if welcome_channel:
-        await welcome_channel.send('https://tenor.com/view/hello-there-hi-there-greetings-gif-9442662')
+        await welcome_channel.send(f'Welcome in <@{member.id}>, \n'
+                                   'https://tenor.com/view/hello-there-hi-there-greetings-gif-9442662')
 
 
 @bot.command(name='name')
@@ -43,7 +44,14 @@ async def name(ctx):
     await ctx.send(f"your name is {ctx.author}")
 
 
+@bot.command(name='bp')
+async def bp(ctx):
+    await ctx.send("Someone may not want to share their blueprint because once it gets out, other people may start"
+                   " taking credit for the hard work that was put into making it, which is pretty sucky.")
+
+
 @bot.command(name='say')
+@has_any_role("Fusion Space Member")
 async def bot_list(ctx, *args):
     if not args:
         await ctx.send("You have to tell me what to say!")
@@ -51,11 +59,19 @@ async def bot_list(ctx, *args):
 
     args = "{}".format(" ".join(args))
 
-    if '@' in args:  # TODO: fix
-        args.replace('@', '@ ')
+    if '<@' in args:
+        args = args.split(' ')
+        for arg in args:
+            if arg[:2] == '<@' and arg[-1:] == '>':
+                idx = args.index(arg)
+                arg = arg.replace('<@', '')
+                arg = arg.replace('>', '')
+                if arg.isdigit():
+                    user = bot.get_user(int(arg))
+                    args[idx] = f'{user.name}#{user.discriminator}'
+        args = "{}".format(" ".join(args))
 
-    print(args)
-    if args[:-2] == '/s':
+    if args[-2:] == '/s':
         args = list(args)
         lu = -1
         for idx in range(len(args[:-2])):
@@ -76,18 +92,14 @@ async def fusion(ctx):
     await ctx.send("Fusion Bot!")
 
 
-@bot.command(name='commands')  # TODO add all commands for help
-async def helpme(ctx):
-    await ctx.send("Command(s) - Usage(s):")
-
-
 @bot.command(name='warn')  # TODO warns sender of message replied to, or the @name
+@has_any_role("Fusion Space Member", "Moderation")
 async def warn(ctx, name, *args):
     await ctx.send(f"Warning! {name} "+"{}".format(" ".join(args)))
 
 
-@bot.command(name='logs')  # TODO return requested list with optional arguments i.e. list logs @name
-@has_permissions(ban_members=True)
+@bot.command(name='logs')
+@has_any_role("Fusion Space Member", "Moderation")
 async def mod_logs(ctx, uid, *args):
     if (not uid or '<@' not in uid) and ('#' not in uid) and not uid.isdigit():
         await ctx.send("Must provide valid name!")
@@ -139,7 +151,7 @@ async def mod_logs(ctx, uid, *args):
 
 
 @bot.command(name='log')
-@has_permissions(ban_members=True)
+@has_any_role("Fusion Space Member", "Moderation")
 async def mod_log(ctx, uid, *args):
     if (not uid or '<@' not in uid) and ('#' not in uid) and not uid.isdigit():
         await ctx.send("Must provide valid name")
