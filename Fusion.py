@@ -41,18 +41,22 @@ async def on_member_join(member):
 
 @bot.command(name='name')
 async def name(ctx):
+    """Will say your name"""
     await ctx.send(f"your name is {ctx.author}")
 
 
 @bot.command(name='bp')
 async def bp(ctx):
+    """Explains why not to ask for bps"""
     await ctx.send("Someone may not want to share their blueprint because once it gets out, other people may start"
                    " taking credit for the hard work that was put into making it, which is pretty sucky.")
 
 
 @bot.command(name='say')
-@has_any_role("Fusion Space Member")
+@has_any_role("Fusion Space Member", "Admin")
 async def bot_list(ctx, *args):
+    """Says what you tell it to. Won't @ anyone
+    Usage: f!say <message>"""
     if not args:
         await ctx.send("You have to tell me what to say!")
         return
@@ -89,18 +93,23 @@ async def bot_list(ctx, *args):
 
 @bot.command(name='fusion')
 async def fusion(ctx):
+    """Try it!"""
     await ctx.send("Fusion Bot!")
 
 
 @bot.command(name='warn')  # TODO warns sender of message replied to, or the @name
 @has_any_role("Fusion Space Member", "Moderation")
 async def warn(ctx, name, *args):
+    """Will simply repeat what you say, kinda useless for now
+    Usage: f!warn <user> <optional message>"""
     await ctx.send(f"Warning! {name} "+"{}".format(" ".join(args)))
 
 
 @bot.command(name='logs')
 @has_any_role("Fusion Space Member", "Moderation")
 async def mod_logs(ctx, uid, *args):
+    """Will show all logs for specified user
+    Usage: f!logs <user>"""
     if (not uid or '<@' not in uid) and ('#' not in uid) and not uid.isdigit():
         await ctx.send("Must provide valid name!")
         return
@@ -153,6 +162,8 @@ async def mod_logs(ctx, uid, *args):
 @bot.command(name='log')
 @has_any_role("Fusion Space Member", "Moderation")
 async def mod_log(ctx, uid, *args):
+    """Will store a moderator log for a specified user
+    Usage: f!log <user> <reason>"""
     if (not uid or '<@' not in uid) and ('#' not in uid) and not uid.isdigit():
         await ctx.send("Must provide valid name")
         return
